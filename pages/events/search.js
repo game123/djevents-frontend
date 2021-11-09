@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Layout from '@/components/Layout'
 // import EventItem from '@/components/EventItem'
 import EventItem from '@/components/EvenItem'
-import {API_URL} from '@/components/config/index'
+import {API_URL} from '@/config/index'
 
 export default function SearchPage({events}) {
   const router = useRouter()
