@@ -1,16 +1,15 @@
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { useState } from 'react';
-import { useRouter } from 'next/router';
-import Link from 'next/link';
-import Layout from '@/components/Layout';
-import {API_URL} from '@/config/index';
+import { parseCookies } from '@/helpers/index'
+import { ToastContainer, toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
+import { useState } from 'react'
+import { useRouter } from 'next/router'
+import Link from 'next/link'
+import Layout from '@/components/Layout'
+import { API_URL } from '@/config/index'
+import styles from '@/styles/Form.module.css'
 
-
-import styles from '@/styles/Form.module.css';
-
-export default function AddEventPage() {
-  const [values, setValues] = useState ( {
+export default function AddEventPage({ token }) {
+  const [values, setValues] = useState({
     name: '',
     performers: '',
     venue: '',
@@ -18,40 +17,45 @@ export default function AddEventPage() {
     date: '',
     time: '',
     description: '',
-  });
+  })
 
-  const router = useRouter();
+  const router = useRouter()
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     // Validation
-    const hasEmptyFields = Object.values(values).some((element) => element === '')
+    const hasEmptyFields = Object.values(values).some(
+      (element) => element === ''
+    )
 
     if (hasEmptyFields) {
-      toast.error('Please fill in all fields');
-      return
+      toast.error('Please fill in all fields')
     }
 
     const res = await fetch(`${API_URL}/events`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(values)
+      body: JSON.stringify(values),
     })
 
     if (!res.ok) {
-      toast.error('Something Went Wrong')  
+      if (res.status === 403 || res.status === 401) {
+        toast.error('No token included')
+        return
+      }
+      toast.error('Something Went Wrong')
     } else {
       const evt = await res.json()
       router.push(`/events/${evt.slug}`)
     }
-
-  };
+  }
 
   const handleInputChange = (e) => {
-    const {name, value} = e.target
+    const { name, value } = e.target
     setValues({ ...values, [name]: value })
   }
 
@@ -63,13 +67,14 @@ export default function AddEventPage() {
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.grid}>
           <div>
-            <label htmlFor="name">Event Name</label>
-            <input 
-              type='text' 
-              id='name' 
-              name='name' 
+            <label htmlFor='name'>Event Name</label>
+            <input
+              type='text'
+              id='name'
+              name='name'
               value={values.name}
-              onChange={handleInputChange}/>
+              onChange={handleInputChange}
+            />
           </div>
           <div>
             <label htmlFor='performers'>Performers</label>
@@ -122,6 +127,7 @@ export default function AddEventPage() {
             />
           </div>
         </div>
+
         <div>
           <label htmlFor='description'>Event Description</label>
           <textarea
@@ -131,9 +137,20 @@ export default function AddEventPage() {
             value={values.description}
             onChange={handleInputChange}
           ></textarea>
-          </div>
-          <input type='submit' value='Add Event' className='btn' />
+        </div>
+
+        <input type='submit' value='Add Event' className='btn' />
       </form>
     </Layout>
-  );
+  )
+}
+
+export async function getServerSideProps({ req }) {
+  const { token } = parseCookies(req)
+
+  return {
+    props: {
+      token,
+    },
+  }
 }
